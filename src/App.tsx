@@ -11,37 +11,44 @@ function App() {
     addTodo,
     toggleTodo,
     deleteTodo,
-    updateTodoText,
+    updateTodo,
     addAttachment,
     removeAttachment
   } = useTodos();
 
-  const [input, setInput] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editText, setEditText] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const [attachmentInput, setAttachmentInput] = useState('');
   const [showAttachmentInput, setShowAttachmentInput] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim()) {
-      await addTodo(input.trim());
-      setInput('');
+    if (title.trim()) {
+      await addTodo(title.trim(), description.trim());
+      setTitle('');
+      setDescription('');
     }
   };
 
   const handleEdit = async (id: number) => {
-    if (editText.trim()) {
-      await updateTodoText(id, editText.trim());
+    if (editTitle.trim()) {
+      await updateTodo(id, {
+        title: editTitle.trim(),
+        description: editDescription.trim()
+      });
       setEditingId(null);
-      setEditText('');
+      setEditTitle('');
+      setEditDescription('');
     }
   };
 
   const handleAddAttachment = async (todoId: number) => {
     if (attachmentInput.trim()) {
       const attachment: Attachment = {
-        type: attachmentInput.startsWith('http') ? 'link' : 'file',
+        type: attachmentInput.startsWith('s3://') ? 'S3' : 'URL',
         url: attachmentInput,
         name: attachmentInput.split('/').pop() || attachmentInput
       };
@@ -76,15 +83,26 @@ function App() {
             ひよこTodo
           </h1>
 
-          <form onSubmit={handleSubmit} className="mb-6">
-            <div className="flex gap-2">
+          <form onSubmit={handleSubmit} className="mb-6 space-y-4">
+            <div>
               <input
                 type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="新しいタスクを追加..."
-                className="flex-1 px-4 py-2 border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="タイトルを入力..."
+                className="w-full px-4 py-2 border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
+            </div>
+            <div>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="説明を入力..."
+                className="w-full px-4 py-2 border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end">
               <button
                 type="submit"
                 className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors duration-200 flex items-center"
@@ -116,30 +134,56 @@ function App() {
                       )}
                     </button>
                     {editingId === todo.id ? (
-                      <input
-                        type="text"
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        onBlur={() => handleEdit(todo.id)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleEdit(todo.id)}
-                        className="ml-3 flex-1 px-2 py-1 border border-yellow-300 rounded"
-                        autoFocus
-                      />
+                      <div className="ml-3 flex-1 space-y-2">
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="w-full px-2 py-1 border border-yellow-300 rounded"
+                          autoFocus
+                        />
+                        <textarea
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                          className="w-full px-2 py-1 border border-yellow-300 rounded"
+                          rows={2}
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(todo.id)}
+                            className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                          >
+                            保存
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400"
+                          >
+                            キャンセル
+                          </button>
+                        </div>
+                      </div>
                     ) : (
-                      <span
-                        className={`ml-3 ${
+                      <div className="ml-3 flex-1">
+                        <h3 className={`font-medium ${
                           todo.completed ? 'text-gray-500 line-through' : 'text-gray-800'
-                        }`}
-                      >
-                        {todo.text}
-                      </span>
+                        }`}>
+                          {todo.title}
+                        </h3>
+                        <p className={`text-sm mt-1 ${
+                          todo.completed ? 'text-gray-400 line-through' : 'text-gray-600'
+                        }`}>
+                          {todo.description}
+                        </p>
+                      </div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
                         setEditingId(todo.id);
-                        setEditText(todo.text);
+                        setEditTitle(todo.title);
+                        setEditDescription(todo.description);
                       }}
                       className="text-yellow-600 hover:text-yellow-700 focus:outline-none"
                     >
@@ -166,7 +210,7 @@ function App() {
                       type="text"
                       value={attachmentInput}
                       onChange={(e) => setAttachmentInput(e.target.value)}
-                      placeholder="URLまたはファイルパスを入力..."
+                      placeholder="URLまたはS3パスを入力..."
                       className="flex-1 px-2 py-1 border border-yellow-300 rounded"
                     />
                     <button
@@ -182,7 +226,7 @@ function App() {
                   <div className="mt-2 space-y-1">
                     {todo.attachments.map((attachment, index) => (
                       <div key={index} className="flex items-center gap-2 text-sm">
-                        {attachment.type === 'link' ? (
+                        {attachment.type === 'URL' ? (
                           <Link className="w-4 h-4 text-blue-500" />
                         ) : (
                           <Paperclip className="w-4 h-4 text-gray-500" />
@@ -205,6 +249,13 @@ function App() {
                     ))}
                   </div>
                 )}
+
+                <div className="mt-2 text-xs text-gray-500">
+                  作成: {new Date(todo.createdAt).toLocaleString()}
+                  {todo.updatedAt !== todo.createdAt && (
+                    <> | 更新: {new Date(todo.updatedAt).toLocaleString()}</>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -7,4 +7,14 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  server: {
+    proxy: {
+      // APIリクエストをバックエンドサーバーにプロキシ
+      '/api': {
+        target: process.env.BACKEND_URL || 'http://localhost:8080', // バックエンドサーバーのURL
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''), // /api プレフィックスを除去
+      },
+    },
+  },
 });

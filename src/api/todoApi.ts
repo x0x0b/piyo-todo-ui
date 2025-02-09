@@ -1,50 +1,62 @@
-import { Todo, Attachment } from '../types/todo';
+import { Todo, Attachment } from "../types/todo";
 
 // バックエンドAPIとの通信を担当するクラス
 export class TodoApi {
   private baseUrl: string;
 
-  constructor(baseUrl: string = '/api') {
+  constructor(baseUrl: string = "/api") {
     this.baseUrl = baseUrl;
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
   }
 
   // Todo一覧の取得
   async fetchTodos(): Promise<Todo[]> {
-    // TODO: 実際のAPIエンドポイントに置き換え
-    return [];
+    return this.request<Todo[]>("/todo/getList");
   }
 
   // 新規Todo作成
-  async createTodo(text: string): Promise<Todo> {
-    // TODO: 実際のAPIエンドポイントに置き換え
-    return {
-      id: Date.now(),
-      text,
-      completed: false,
-      attachments: []
-    };
+  async createTodo(title: string, description: string): Promise<void> {
+    await this.request<void>("/todo/add", {
+      method: "POST",
+      body: JSON.stringify({ title, description }),
+    });
+    this.fetchTodos(); // 一覧を再取得
   }
 
   // Todo更新
-  async updateTodo(id: number, updates: Partial<Todo>): Promise<Todo> {
-    // TODO: 実際のAPIエンドポイントに置き換え
-    return { id, ...updates } as Todo;
-  }
-
-  // Todo削除
-  async deleteTodo(id: number): Promise<void> {
-    // TODO: 実際のAPIエンドポイントに置き換え
+  async updateTodo(id: number, updates: Partial<Todo>): Promise<void> {
+    await this.request<void>(`/todo/set/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    });
+    this.fetchTodos(); // 一覧を再取得
   }
 
   // 添付ファイル追加
-  async addAttachment(todoId: number, attachment: Attachment): Promise<Todo> {
-    // TODO: 実際のAPIエンドポイントに置き換え
-    return {} as Todo;
-  }
-
-  // 添付ファイル削除
-  async removeAttachment(todoId: number, attachmentUrl: string): Promise<Todo> {
-    // TODO: 実際のAPIエンドポイントに置き換え
-    return {} as Todo;
+  async addAttachment(todoId: number, attachment: Attachment): Promise<void> {
+    await this.request<void>(`/todo/${todoId}/attachments/s3`, {
+      method: "POST",
+      body: JSON.stringify(attachment),
+    });
+    this.fetchTodos(); // 一覧を再取得
   }
 }

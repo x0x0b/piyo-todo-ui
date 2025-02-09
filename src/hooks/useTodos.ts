@@ -30,10 +30,10 @@ export function useTodos() {
   }, []);
 
   // Todo追加
-  const addTodo = useCallback(async (text: string) => {
+  const addTodo = useCallback(async (title: string, description: string) => {
     try {
-      const newTodo = await api.createTodo(text);
-      setTodos(prev => [...prev, newTodo]);
+      const updatedTodos = await api.createTodo(title, description);
+      setTodos(updatedTodos);
     } catch (err) {
       setError('Todoの追加に失敗しました');
       console.error(err);
@@ -46,13 +46,10 @@ export function useTodos() {
       const todo = todos.find(t => t.id === id);
       if (!todo) return;
 
-      const updatedTodo = await api.updateTodo(id, {
+      const updatedTodos = await api.updateTodo(id, {
         completed: !todo.completed
       });
-
-      setTodos(prev =>
-        prev.map(t => t.id === id ? updatedTodo : t)
-      );
+      setTodos(updatedTodos);
     } catch (err) {
       setError('Todoの更新に失敗しました');
       console.error(err);
@@ -62,21 +59,19 @@ export function useTodos() {
   // Todo削除
   const deleteTodo = useCallback(async (id: number) => {
     try {
-      await api.deleteTodo(id);
-      setTodos(prev => prev.filter(todo => todo.id !== id));
+      // 削除機能は現在無効化されています
+      console.warn('Delete functionality is currently disabled');
     } catch (err) {
       setError('Todoの削除に失敗しました');
       console.error(err);
     }
   }, []);
 
-  // Todo編集
-  const updateTodoText = useCallback(async (id: number, text: string) => {
+  // Todo更新
+  const updateTodo = useCallback(async (id: number, updates: Partial<Todo>) => {
     try {
-      const updatedTodo = await api.updateTodo(id, { text });
-      setTodos(prev =>
-        prev.map(t => t.id === id ? updatedTodo : t)
-      );
+      const updatedTodos = await api.updateTodo(id, updates);
+      setTodos(updatedTodos);
     } catch (err) {
       setError('Todoの更新に失敗しました');
       console.error(err);
@@ -86,10 +81,8 @@ export function useTodos() {
   // 添付ファイル追加
   const addAttachment = useCallback(async (todoId: number, attachment: Attachment) => {
     try {
-      const updatedTodo = await api.addAttachment(todoId, attachment);
-      setTodos(prev =>
-        prev.map(t => t.id === todoId ? updatedTodo : t)
-      );
+      const updatedTodos = await api.addAttachment(todoId, attachment);
+      setTodos(updatedTodos);
     } catch (err) {
       setError('添付ファイルの追加に失敗しました');
       console.error(err);
@@ -99,10 +92,8 @@ export function useTodos() {
   // 添付ファイル削除
   const removeAttachment = useCallback(async (todoId: number, attachmentUrl: string) => {
     try {
-      const updatedTodo = await api.removeAttachment(todoId, attachmentUrl);
-      setTodos(prev =>
-        prev.map(t => t.id === todoId ? updatedTodo : t)
-      );
+      // 添付ファイル削除機能は現在無効化されています
+      console.warn('Remove attachment functionality is currently disabled');
     } catch (err) {
       setError('添付ファイルの削除に失敗しました');
       console.error(err);
@@ -116,7 +107,7 @@ export function useTodos() {
     addTodo,
     toggleTodo,
     deleteTodo,
-    updateTodoText,
+    updateTodo,
     addAttachment,
     removeAttachment
   };
