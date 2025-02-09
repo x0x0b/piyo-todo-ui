@@ -9,5 +9,6 @@ RUN npm run build
 # Production
 FROM nginx:stable AS production
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY conf/nginx.conf /etc/nginx/templates/nginx.conf.template
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/bin/sh", "-c", "envsubst < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
