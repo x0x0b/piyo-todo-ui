@@ -11,4 +11,4 @@ FROM nginx:stable AS production
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY conf/nginx.conf /etc/nginx/templates/nginx.conf.template
 EXPOSE 80
-CMD ["/bin/sh", "-c", "envsubst '$BACKEND_URL' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "envsubst '$BACKEND_URL $SERVER_NAME' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
